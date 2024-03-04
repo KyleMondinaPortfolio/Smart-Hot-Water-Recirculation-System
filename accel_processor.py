@@ -2,6 +2,9 @@ import smbus2				#import SMBus module of I2C
 from time import sleep          #import
 import ctypes
 import csv
+from multiprocessing import Process, Queue, Lock
+import numpy as np
+from datetime import datetime
 
 #some MPU6050 Registers and their Address, MPU 6050 uses big endian
 PWR_MGMT_1   = 0x6B
@@ -38,6 +41,8 @@ FS_SEL_VALS = [131.0, 65.5, 32.8, 16.4] #250, 500, 1000, 2000 deg/s
 AFS_SEL_IDX = 3
 FS_SEL_IDX = 3
 
+bus = smbus2.SMBus(1) 	# or bus = smbus.SMBus(0) for older version boards
+Device_Address = 0x68   # MPU6050 device address
 
 def self_test_gyro():
 	gyro_config_restore = bus.read_byte_data(Device_Address, GYRO_CONFIG)
@@ -188,7 +193,7 @@ def read_accel():
 
 	divisor = AFS_SEL_VALS[AFS_SEL_IDX]
 
-	return (valx/divisor, valy/divisor, valz/divisor) #value depends on accel scale, returns in g
+	return [valx/divisor, valy/divisor, valz/divisor] #value depends on accel scale, returns in g
 
 def read_gyro():
 	valx = read_s16_raw(GYRO_XOUT_H, GYRO_XOUT_L)
@@ -197,34 +202,94 @@ def read_gyro():
 
 	divisor = FS_SEL_VALS[FS_SEL_IDX]
 
-	return (valx/divisor, valy/divisor, valz/divisor) #value depends on gyro scale, returns in deg/s
+	return [valx/divisor, valy/divisor, valz/divisor] #value depends on gyro scale, returns in deg/s
 
 
-bus = smbus2.SMBus(1) 	# or bus = smbus.SMBus(0) for older version boards
-Device_Address = 0x68   # MPU6050 device address
+SAMPLE_COUNT = 500
 
-MPU_Init()
+def producer(dqueue: Queue, plock):
+	print("Im a producer")
+	MPU_Init()
 
-print ("Reading Data of Gyroscope and Accelerometer")
+	while True:		
+		sample_segment = []
+		for i in range(SAMPLE_COUNT):
 
-with open('water.csv', 'w', newline='') as csvfile:
-	spamwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-	for i in range(0, 1000):
+			#Read Accelerometer value
+			accel = read_accel()
+			Ax = accel[0]
+			Ay = accel[1]
+			Az = accel[2]
+			
+			#Read Gyroscope value
+			gyro = read_gyro()
+			Gx = gyro[0]
+			Gy = gyro[1]
+			Gz = gyro[2]
+
+			#Read temp value
+			Temp = read_temp()
+			
+			#print ("Gx=%.6f" %Gx, u'\u00b0'+ "/s", "\tGy=%.6f" %Gy, u'\u00b0'+ "/s", "\tGz=%.6f" %Gz, u'\u00b0'+ "/s", "\tAx=%.6f g" %Ax, "\tAy=%.6f g" %Ay, "\tAz=%.6f g" %Az, "\tTemp=%.2f c" %Temp, end='\x1b[2k\r') 	
+			sample_segment.append(accel)
+
+			#sleep(0.001)
+		dqueue.put(sample_segment)
+
+def consumer(dqueue, plock):
+	print("Im a consumer")
+
+	seq = 0
+	is_on = False
+	while True:
+		s = dqueue.get()
 		
-		#Read Accelerometer raw value
-		accel = read_accel()
-		Ax = accel[0]
-		Ay = accel[1]
-		Az = accel[2]
-		
-		#Read Gyroscope raw value
-		gyro = read_gyro()
-		Gx = gyro[0]
-		Gy = gyro[1]
-		Gz = gyro[2]
+		#this processing isnt final, it's calibrated to Roshan's house (sorta) to gather basic data
+		sample = np.ndarray(shape=(SAMPLE_COUNT, 3), buffer=np.array(s)).transpose() #(3, SAMPLE_COUNT)
+		sample = np.linalg.norm(sample, axis=0)
 
-		Temp = read_temp()
+		if np.var(sample) > 0.001:
+			if is_on:
+				seq = 3
+			else:
+				seq += 1
+		else:
+			if is_on:
+				seq -= 1
+			else:
+				seq = 0
+
+		old_on = is_on
+		if seq == 3:
+			is_on = True
+		elif seq == 0:
+			is_on = False
 		
-		spamwriter.writerow([Ax, Ay, Az])
-		print ("Gx=%.6f" %Gx, u'\u00b0'+ "/s", "\tGy=%.6f" %Gy, u'\u00b0'+ "/s", "\tGz=%.6f" %Gz, u'\u00b0'+ "/s", "\tAx=%.6f g" %Ax, "\tAy=%.6f g" %Ay, "\tAz=%.6f g" %Az, "\tTemp=%.2f c" %Temp, end='\x1b[2k\r') 	
-		sleep(0.001)
+		#found change in state
+		if old_on != is_on:
+			if is_on:
+				with plock:
+					print("Hot water ON")
+				with open('running-data.txt', 'a') as f:
+					f.write(f"1 {datetime.now()}\n")
+			else:
+				with plock:
+					print("Hot water OFF")
+				with open('running-data.txt', 'a') as f:
+					f.write(f"0 {datetime.now()}\n")
+		
+
+
+
+
+
+if __name__ == "__main__":
+	data_queue = Queue()
+	print_lock = Lock()
+
+	p = Process(target=consumer, args=(data_queue, print_lock))
+	p.daemon = True
+	p.start()
+
+	producer(data_queue, print_lock)
+	p.join()
