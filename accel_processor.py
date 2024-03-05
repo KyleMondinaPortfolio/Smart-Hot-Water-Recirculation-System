@@ -251,7 +251,7 @@ def consumer(dqueue, plock):
 		with plock:
 			print(np.var(sample))
 
-		if np.var(sample) > 8e-4:
+		if np.var(sample) > 1e-3:
 			if is_on:
 				seq = DELAY_SAMPLES
 			else:
