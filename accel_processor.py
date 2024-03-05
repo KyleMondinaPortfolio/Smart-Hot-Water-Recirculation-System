@@ -38,8 +38,8 @@ FS_SEL_VALS = [131.0, 65.5, 32.8, 16.4] #250, 500, 1000, 2000 deg/s
 
 
 #CONFIG VALUES
-AFS_SEL_IDX = 3
-FS_SEL_IDX = 3
+AFS_SEL_IDX = 0
+FS_SEL_IDX = 0
 
 bus = smbus2.SMBus(1) 	# or bus = smbus.SMBus(0) for older version boards
 Device_Address = 0x68   # MPU6050 device address
@@ -245,8 +245,11 @@ def consumer(dqueue, plock):
 		s = dqueue.get()
 		
 		#this processing isnt final, it's calibrated to Roshan's house (sorta) to gather basic data
-		sample = np.ndarray(shape=(SAMPLE_COUNT, 3), buffer=np.array(s)).transpose() #(3, SAMPLE_COUNT)
+		sample = np.ndarray(shape=(SAMPLE_COUNT, 3), buffer=np.array(s), dtype=np.double).transpose() #(3, SAMPLE_COUNT)
 		sample = np.linalg.norm(sample, axis=0)
+		with plock:
+			print(np.var(sample))
+		pass
 
 		if np.var(sample) > 0.001:
 			if is_on:
