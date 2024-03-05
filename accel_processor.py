@@ -236,6 +236,7 @@ def producer(dqueue: Queue, plock):
 			#sleep(0.001)
 		dqueue.put(sample_segment)
 
+DELAY_SAMPLES = 4
 def consumer(dqueue, plock):
 	print("Im a consumer")
 
@@ -249,11 +250,10 @@ def consumer(dqueue, plock):
 		sample = np.linalg.norm(sample, axis=0)
 		with plock:
 			print(np.var(sample))
-		pass
 
-		if np.var(sample) > 0.001:
+		if np.var(sample) > 8e-4:
 			if is_on:
-				seq = 3
+				seq = DELAY_SAMPLES
 			else:
 				seq += 1
 		else:
@@ -263,7 +263,7 @@ def consumer(dqueue, plock):
 				seq = 0
 
 		old_on = is_on
-		if seq == 3:
+		if seq == DELAY_SAMPLES:
 			is_on = True
 		elif seq == 0:
 			is_on = False
