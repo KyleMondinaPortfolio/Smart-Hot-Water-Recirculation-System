@@ -1,5 +1,7 @@
-import global_vars
+from global_vars import PREDICTION_SCHEDULE
 import numpy as np
+import datetime
+import time
 from statsmodels.tsa.arima.model import ARIMA
 
 def predict_by_arima():
@@ -22,7 +24,7 @@ def predict_by_arima():
                 next_day_forecast = np.append(next_day_forecast,forecast[0])
             with open('hw_forecast.txt', 'w') as f:
                 for forecast_value in next_day_forecast:
-                    file.write(str(forecast_value) + '\n')
+                    f.write(str(forecast_value) + '\n')
 
             # Wait for the next day
             next_day = datetime.datetime.now() + datetime.timedelta(days=1)

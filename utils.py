@@ -8,4 +8,3 @@ def load_config(config_file):
 def load_hw_forecast(hw_forecast_file):
     with open(hw_forecast_file, "r") as f:
         return [int(line.strip()) for line in f]
-

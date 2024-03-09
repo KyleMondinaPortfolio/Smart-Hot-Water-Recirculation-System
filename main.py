@@ -1,4 +1,7 @@
-import global_vars
+from global_vars import hw_forecast_lock, hw_forecast, pump_status, PUMP_SWITCH_INTV
+import datetime
+import threading
+import time
 from arima import predict_by_arima
 
 def pump_switch():
