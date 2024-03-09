@@ -133,13 +133,13 @@ emaShowery = stockValuesArrayShower3y.ewm(alpha=0.8,adjust=True).mean()
 xAxis = 0;
 yAxis = 0;
 
-if (1.04 < emaShower.max()['values'] < 1.09) or (1.09 < emaShower.max()['values'] < 1.05):
+if (1.034 < emaShower.max()['values'] < 1.09) or (1.09 < emaShower.max()['values'] < 1.034):
     xAxis = 1;
 else:
     xAxis = 0;
 
 #finding Max  for y
-if (0.2 < emaShowery.max()['values'] < 0.3) or (0.25 < emaShowery.max()['values'] < 0.2):
+if (0.2 < emaShowery.max()['values'] < 0.3) or (0.3 < emaShowery.max()['values'] < 0.2):
     yAxis = 1;
 else:
     yAxis = 0;
