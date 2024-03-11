@@ -1,0 +1,68 @@
+
+:root {
+    --header: #383D3B;
+    --background: #EEE5E9;
+    --on: green;
+    --off: gray;
+    --text: white;
+    --font-family: 'YourFont', sans-serif; /* Replace 'YourFont' with the actual font name */
+
+}
+
+body {
+    font-family: var(--font-family);
+  }
+
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+.Header {
+  background-color:var(--header);
+  flex-grow:1;
+  width:100%;
+  height:100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.Header p {
+    display: flex;
+    align-items: center; /* Add this line to center the content horizontally */
+    justify-content: center;
+    color: var(--text); /* Set text color to white */
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+.Controls {
+  background-color:var(--background);
+  display: flex;
+  justify-content: space-around;
+  flex-direction:column;
+  flex-grow:3;
+  width: 100%;
+  height:100%;
+  align-items: center; /* Add this line to center the content horizontally */
+  justify-content: center;
+
+}
+
+
+.Prediction,
+.PumpSwitch {
+    
+  padding: 5px;
+  text-align: center;
+  background-color:var(--off);
+  border-radius: 10px;
+  margin: 20px;
+  width:40%;
+  color: var(--text); /* Set text color to white */
+  font-size: 18px;
+  font-weight: bold;
+}
+
