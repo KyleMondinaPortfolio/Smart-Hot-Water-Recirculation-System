@@ -6,11 +6,17 @@ import json
 from gpiozero import LED
 from socketio import Client
 
+from gpiozero.pins.rpigpio import RPiGPIOFactory
+
+HW_LED_PIN = 17  # Adjust pin number as needed
+rpi_gpio_factory = RPiGPIOFactory()
+pump_status = LED(HW_LED_PIN)
+
 #from arima import predict_by_arima
 
 config = utils.load_config("config.json")
 ### LED pin to indicate if hot water is recirculating
-HW_LED_PIN = config["HW_LED_PIN"]
+#HW_LED_PIN = config["HW_LED_PIN"]
 ### Interval in seconds how often to check if the water pump needs to be turned on or not
 PUMP_SWITCH_INTV = config["PUMP_SWITCH_INTV"]
 ### When to run prediction algorithm
@@ -30,6 +36,7 @@ hw_forecast_lock = threading.Lock()
 predictionStatus = 'off'
 pumpSwitchStatus = 'off'
 
+
 ### WebSocket server URL
 WS_SERVER_URL = "ws://localhost:3000"
 sio = Client()
@@ -41,11 +48,11 @@ def on_message(data):
     print('Recieved Updated States:')
     print(data)
     update_state(data)
-    if(predictionStatus):
-        #pump_status.on()
+    if(pumpSwitchStatus == 'on'):
+        pump_status.on()
         print('Pump turned on')
     else:
-        #pump_status.off()
+        pump_status.off()
         print('Pump turned off')
 
 
@@ -60,10 +67,10 @@ def message(data):
         update_state(updated_state)
 
     if(predictionStatus):
-        #pump_status.on()
+        pump_status.on()
         print('Pump turned on')
     else:
-        #pump_status.off()
+        pump_status.off()
         print('Pump turned off')
 
 @sio.event
