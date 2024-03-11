@@ -47,11 +47,11 @@ def on_message(data):
     print(data)
     update_state(data)
     if(pumpSwitchStatus == 'on'):
-        pump_status.on()
-        print('Pump turned on')
+        #pump_status.on()
+        print(f"Pump turned on at {datetime.datetime.now()}")
     else:
-        pump_status.off()
-        print('Pump turned off')
+        #pump_status.off()
+        print(f"Pump turned off at {datetime.datetime.now()}")
 
 # Connect and listen for events in our nodejs server
 @sio.event
@@ -118,8 +118,8 @@ def predict_by_arima():
                 time_to_sleep = (next_day - datetime.datetime.now()).total_seconds()
                 time.sleep(time_to_sleep)
         else:
-            # Sleep for an hour
-            time.sleep(3600)
+            # Sleep for a minute
+            time.sleep(59)
 
 
 
