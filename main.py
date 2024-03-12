@@ -97,20 +97,26 @@ def predict_by_arima():
         if current_time.hour == PREDICTION_SCHEDULE and current_time.minute == 0:
             if (predictionStatus == "on"):
                 print("Running Prediction")
-                data = np.loadtxt('hw_demand.csv', delimiter=',')
-                day_vs_hour = data.T
                 next_day_forecast = np.array([])
+                day_vs_hour = utils.preprocess_for_arima('sample-data.txt')
 
-                for hour in day_vs_hour:
+                for hour in day_vs_hour.values:
                     p=2
                     q=1
                     model = ARIMA(hour, order=(p,1,q))
                     arma_model = model.fit()
                     forecast = arma_model.forecast(steps=1)
                     next_day_forecast = np.append(next_day_forecast,forecast[0])
-                with open('hw_forecast.txt', 'w') as f:
+                with open('hw_forecast.txt', 'w') as output_file:
                     for forecast_value in next_day_forecast:
-                        f.write(str(forecast_value) + '\n')
+                        # Convert the forecast value to a floating-point number
+                        number = float(forecast_value)
+
+                        # Round the number to either 0 or 1
+                        rounded_number = round(number)
+
+                        # Write the rounded value to the output file
+                        output_file.write(str(rounded_number) + '\n')
 
                 # Wait for the next day
                 next_day = datetime.datetime.now() + datetime.timedelta(days=1)
@@ -120,9 +126,6 @@ def predict_by_arima():
         else:
             # Sleep for a minute
             time.sleep(59)
-
-
-
 
 def main():
     sio.connect(WS_SERVER_URL)

@@ -1,36 +1,31 @@
-from global_vars import PREDICTION_SCHEDULE
 import numpy as np
 import datetime
 import time
 from statsmodels.tsa.arima.model import ARIMA
+import utils
 
 def predict_by_arima():
 
-    while True:
-        current_time = datetime.datetime.now().time()
-        # Check if current time is the schedule time to run the prediction
-        if current_time.hour == PREDICTION_SCHEDULE and current_time.minute == 0:
-            print("Running Prediction")
-            data = np.loadtxt('hw_demand.csv', delimiter=',')
-            day_vs_hour = data.T
-            next_day_forecast = np.array([])
+    next_day_forecast = np.array([])
+    day_vs_hour = utils.preprocess_for_arima('sample-data.txt')
 
-            for hour in day_vs_hour:
-                p=2
-                q=1
-                model = ARIMA(hour, order=(p,1,q))
-                arma_model = model.fit()
-                forecast = arma_model.forecast(steps=1)
-                next_day_forecast = np.append(next_day_forecast,forecast[0])
-            with open('hw_forecast.txt', 'w') as f:
-                for forecast_value in next_day_forecast:
-                    f.write(str(forecast_value) + '\n')
+    for hour in day_vs_hour.values:
+        p=2
+        q=1
+        model = ARIMA(hour, order=(p,1,q))
+        arma_model = model.fit()
+        forecast = arma_model.forecast(steps=1)
+        next_day_forecast = np.append(next_day_forecast,forecast[0])
+    with open('rounded_output.txt', 'w') as output_file:
+        for forecast_value in next_day_forecast:
+            # Convert the forecast value to a floating-point number
+            number = float(forecast_value)
 
-            # Wait for the next day
-            next_day = datetime.datetime.now() + datetime.timedelta(days=1)
-            next_day = next_day.replace(hour = PREDICTION_SCHEDULE, minute = 0, second = 0, microsecond = 0)
-            time_to_sleep = (next_day - datetime.datetime.now()).total_seconds()
-            time.sleep(time_to_sleep)
-        else:
-            time.sleep(60)
+            # Round the number to either 0 or 1
+            rounded_number = round(number)
+
+            # Write the rounded value to the output file
+            output_file.write(str(rounded_number) + '\n')
+
+predict_by_arima()
 
