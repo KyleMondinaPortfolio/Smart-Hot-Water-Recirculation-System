@@ -1,4 +1,5 @@
 import json
+
 from datetime import datetime, timedelta
 import pandas as pd
 
@@ -42,7 +43,7 @@ def preprocess_for_arima(file):
 
     # Find the range of dates and times
     dates = sorted(set(date for date, _ in data.keys()))
-    times = sorted(set(index[1] for index in data.keys()))
+    times = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47]
 
     # Create the 2D array
     today_array = [[data.get((date, time), 0) for time in times] for date in dates]
