@@ -98,7 +98,7 @@ def predict_by_arima():
             if (predictionStatus == "on"):
                 print("Running Prediction")
                 next_day_forecast = np.array([])
-                day_vs_hour = utils.preprocess_for_arima('sample-data.txt')
+                day_vs_hour = utils.preprocess_for_arima('running-data.csv')
 
                 for hour in day_vs_hour.values:
                     p=2

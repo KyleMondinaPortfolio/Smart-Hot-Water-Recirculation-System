@@ -2,6 +2,7 @@ import json
 
 from datetime import datetime, timedelta
 import pandas as pd
+import csv
 
 def load_config(config_file):
     with open(config_file) as f:
@@ -12,6 +13,8 @@ def load_hw_forecast(hw_forecast_file):
     with open(hw_forecast_file, "r") as f:
         return [int(line.strip()) for line in f]
 
+
+
 # Function to convert time to 30-minute intervals starting from 12:00am
 def time_to_index(time_str):
     time_obj = datetime.strptime(time_str, "%H:%M:%S")  # Updated format string
@@ -20,26 +23,34 @@ def time_to_index(time_str):
 
 
 # Given the file for hot water detection results, preprocess the data suitable for arima prediction function
+
 def preprocess_for_arima(file):
-    # Read the lines from the txt file
-    with open(file, 'r') as file:
-        lines = file.readlines()
 
     # Create a dictionary to store the data
     data = {}
 
-    # Parse the lines and fill the dictionary
-    for line in lines:
-        values = line.split()
-        hot_water_needed = int(values[0])
-        date = values[1]
-        time = values[2][:8]  # Extract only the HH:MM:SS part
+    with open(file, 'r') as file:
+        csv_reader = csv.reader(file)
+        for row in csv_reader:
+            try:
+                value = int(row[0])
+            except ValueError:
+                print("Invalid value:", row[0])
+                continue
 
-        index = (date, time_to_index(time))
-        if index not in data:
-            data[index] = hot_water_needed
-        else:
-            data[index] |= hot_water_needed
+            hot_water_needed = int(row[0])
+            date_time_str = row[1]
+            date_time_str = date_time_str.strip("{}").split("(")[1].split(")")[0]
+            date_time_obj = datetime.strptime(date_time_str, "%Y, %m, %d, %H, %M, %S, %f")
+
+            date = date_time_obj.date()
+            time = date_time_obj.strftime("%H:%M:%S")
+
+            index = (date, time_to_index(time))
+            if index not in data:
+                data[index] = hot_water_needed
+            else:
+                data[index] |= hot_water_needed
 
     # Find the range of dates and times
     dates = sorted(set(date for date, _ in data.keys()))
