@@ -206,7 +206,7 @@ def read_gyro():
 	return [valx/divisor, valy/divisor, valz/divisor] #value depends on gyro scale, returns in deg/s
 
 
-SAMPLE_COUNT = 500
+SAMPLE_COUNT = 512
 
 def producer(dqueue: Queue, plock):
 	print("Im a producer")
@@ -247,21 +247,28 @@ def consumer(dqueue, plock):
 	while True:
 		s = dqueue.get()
 		
-		# sample = np.ndarray(shape=(SAMPLE_COUNT, 3), buffer=np.array(s), dtype=np.double).transpose() #(3, SAMPLE_COUNT)
+		sample = np.ndarray(shape=(SAMPLE_COUNT, 3), buffer=np.array(s), dtype=np.double).transpose() #(3, SAMPLE_COUNT)
 		# sample = np.linalg.norm(sample, axis=0)
 		# with plock:
 		# 	print(np.var(sample))
 
 		# threshold = np.var(sample) > 1e-3
 
-		sample = pd.DataFrame({'x': [val[0] for val in s], 'y': [val[1] for val in s], 'z': [val[2] for val in s]})
-		ema = sample.T.ewm(alpha=0.8, adjust=True).mean()
 		threshold = False
-		max_x =  ema.loc[['x']].max(axis=1).item()
-		max_y =  ema.loc[['y']].max(axis=1).item()
-		print(f"X: {max_x}\tY: {max_y}")
-		if ((1.034 < max_x and max_x < 1.09) or (1.09 < max_x and max_x < 1.034)):
+		fft = np.fft.fft(sample[0])[SAMPLE_COUNT//2:]
+		fft_norm = np.abs(fft)
+		fft_mb = np.argmax(fft_norm)
+		if (fft_mb == 238 or fft_mb == 224 or 110 <= fft_mb <= 114) and fft_norm[fft_mb] > 2:
 			threshold = True
+
+		# sample = pd.DataFrame({'x': [val[0] for val in s], 'y': [val[1] for val in s], 'z': [val[2] for val in s]})
+		# ema = sample.T.ewm(com=0.4).mean()
+		# max_y =  ema.loc[['y']].max(axis=1).item()
+		# print(f"Y: {max_y}")
+		# if (0.15 <= max_y and max_y <= 0.2):
+		# 	threshold = False
+		# elif 0.1 <= max_y and max_y <= 0.25:
+		# 	threshold = True
 
 		if threshold:
 			if is_on:
@@ -288,14 +295,14 @@ def consumer(dqueue, plock):
 				with open('running-data.csv', 'a') as f:
 					writer = csv.writer(f, delimiter=',')
 					writer.writerow([1, {datetime.now()}])
-				sample.to_csv(f"samples/sample-{tsample_count}.csv", index=False)				
+				#sample.to_csv(f"samples/sample-{tsample_count}.csv", index=False)				
 			else:
 				with plock:
 					print("Hot water OFF")
 				with open('running-data.csv', 'a') as f:
 					writer = csv.writer(f, delimiter=',')
 					writer.writerow([0, {datetime.now()}])
-				sample.to_csv(f"samples/sample-{tsample_count}.csv", index=False)
+				#sample.to_csv(f"samples/sample-{tsample_count}.csv", index=False)
 
 			tsample_count += 1
 		

@@ -127,15 +127,5 @@ python main.py
 http://192.168.4.1:3000
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
+# Running
+To run, cd to the main folder of the repository and run `./run.sh`. Check the outputs folder for stdout dumps of each process. To stop running, kill the 3 PIDs in the run.pid file.
