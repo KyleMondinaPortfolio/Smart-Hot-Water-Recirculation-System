@@ -16,7 +16,7 @@ def load_hw_forecast(hw_forecast_file):
 def time_to_index(time_str):
     time_obj = datetime.strptime(time_str, "%H:%M:%S")  # Updated format string
     minutes_since_midnight = (time_obj - time_obj.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds() / 60
-    return int(minutes_since_midnight // 30)
+    return int(minutes_since_midnight // 15)
 
 
 # Given the file for hot water detection results, preprocess the data suitable for arima prediction function
@@ -43,10 +43,10 @@ def preprocess_for_arima(file):
 
     # Find the range of dates and times
     dates = sorted(set(date for date, _ in data.keys()))
-    times = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47]
+    times = [i for i in range(0, 96)]
 
     # Create the 2D array
     today_array = [[data.get((date, time), 0) for time in times] for date in dates]
-
+    print(today_array)
     df = pd.DataFrame(today_array)
     return df.T

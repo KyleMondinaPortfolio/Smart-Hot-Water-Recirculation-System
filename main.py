@@ -76,7 +76,7 @@ def pump_switch():
     while True:
         if (predictionStatus == "on"):
             now = datetime.datetime.now()
-            index = ((now.hour * 60) + now.minute) // 30
+            index = ((now.hour * 60) + now.minute) // 15
             with hw_forecast_lock:
                is_hw_needed = hw_forecast[index]
             if is_hw_needed:

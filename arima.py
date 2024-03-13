@@ -7,10 +7,10 @@ import utils
 def predict_by_arima():
 
     next_day_forecast = np.array([])
-    day_vs_hour = utils.preprocess_for_arima('sample-data.txt')
+    day_vs_hour = utils.preprocess_for_arima('sample-data-4-7.txt')
 
     for hour in day_vs_hour.values:
-        p=2
+        p=1
         q=1
         model = ARIMA(hour, order=(p,1,q))
         arma_model = model.fit()
