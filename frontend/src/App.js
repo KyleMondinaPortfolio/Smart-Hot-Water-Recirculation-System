@@ -78,15 +78,16 @@ function App() {
       <div className="Controls">
         <div className="Prediction" onClick={togglePredictionStatus} style={{ backgroundColor: getStatusColor(predictionStatus) }}>
           <p>Prediction</p>
-          <p>{predictionStatus}</p>
+          <p>Turn Off</p>
         </div>
         <div className="PumpSwitch" onClick={togglePumpSwitchStatus} style={{ backgroundColor: getStatusColor(pumpSwitchStatus) }}>
           <p>Pump Switch</p>
-          <p>{pumpSwitchStatus}</p>
+          <p>Turn On</p>
         </div>
       </div>
     </div>
   );
 }
+
 
 export default App;
