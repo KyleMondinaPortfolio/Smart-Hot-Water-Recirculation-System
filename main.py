@@ -81,10 +81,10 @@ def pump_switch():
                is_hw_needed = hw_forecast[index]
             if is_hw_needed:
                 pumpSwitchStatus = 'on'
-                sio.emit('pythonUpdate', {'predictionStatus': pumpSwitchStatus, 'pumpSwitchStatus': 'on'})
+                sio.emit('pythonUpdate', {'predictionStatus': predictionStatus, 'pumpSwitchStatus': 'on'})
             else:
                 pumpSwitchStatus = 'off'
-                sio.emit('pythonUpdate', {'predictionStatus': pumpSwitchStatus, 'pumpSwitchStatus': 'off'})
+                sio.emit('pythonUpdate', {'predictionStatus': predictionStatus, 'pumpSwitchStatus': 'off'})
         else:
             pass
         time.sleep(PUMP_SWITCH_INTV)

@@ -1,3 +1,9 @@
+#This file contains the sampling and analysis program for the MPU 6050 used for hot water detection
+#It includes:
+#1. I2C functions that implement required functionality including self testing for the MPU 6050
+#2. A program that divides into two processes for sampling from the MPU 6050 and outputting an analysis of water flow state to a file
+#Program should be run using the .venv in the repository
+
 import smbus2				#import SMBus module of I2C
 from time import sleep          #import
 import ctypes
@@ -5,7 +11,6 @@ import csv
 from multiprocessing import Process, Queue, Lock
 import numpy as np
 from datetime import datetime
-import pandas as pd
 
 #some MPU6050 Registers and their Address, MPU 6050 uses big endian
 PWR_MGMT_1   = 0x6B
@@ -33,18 +38,21 @@ GYRO_ZOUT_L  = 0x48
 TEMP_OUT_H   = 0x41
 TEMP_OUT_L   = 0x42
 
-
+#Values for selecting accelerometer and gyroscope measurement ranges
 AFS_SEL_VALS = [16384.0, 8192.0, 4096.0, 2048.0] #2g, 4g, 8g, 16g
 FS_SEL_VALS = [131.0, 65.5, 32.8, 16.4] #250, 500, 1000, 2000 deg/s
 
 
-#CONFIG VALUES
+#CONFIG VALUES for measurement ranges
 AFS_SEL_IDX = 0
 FS_SEL_IDX = 0
 
-bus = smbus2.SMBus(1) 	# or bus = smbus.SMBus(0) for older version boards
+bus = smbus2.SMBus(1)   #use SMBUS v2
 Device_Address = 0x68   # MPU6050 device address
 
+#Runs a self test for the gyroscope
+#Sets self test flags in the config register and compares them to the values with self test disabled
+#If the percent error of the difference compared to the factory trim stored in the SELF_TEST registers is too high, test fails
 def self_test_gyro():
 	gyro_config_restore = bus.read_byte_data(Device_Address, GYRO_CONFIG)
 
@@ -83,6 +91,7 @@ def self_test_gyro():
 	y_change_p = (response_y - factory_trim_y) / factory_trim_y 
 	z_change_p = (response_z - factory_trim_z) / factory_trim_z 
 
+	#Max allowed error according to manufacturer spec
 	print("\tMax Allowed Error: 0.14")
 	print(f"\tError Gx: {x_change_p}")
 	print(f"\tError Gy: {y_change_p}")
@@ -96,6 +105,9 @@ def self_test_gyro():
 
 	bus.write_byte_data(Device_Address, GYRO_CONFIG, gyro_config_restore)
 
+#Runs a self test for the accelerometer
+#Sets self test flags in the config register and compares them to the values with self test disabled
+#If the percent error of the difference compared to the factory trim stored in the SELF_TEST registers is too high, test fails
 def self_test_accel():
 	accel_config_restore = bus.read_byte_data(Device_Address, ACCEL_CONFIG)
 
@@ -135,6 +147,7 @@ def self_test_accel():
 	y_change_p = (response_y - factory_trim_y) / factory_trim_y 
 	z_change_p = (response_z - factory_trim_z) / factory_trim_z 
 
+	#Max allowed error according to manufacturer spec
 	print("\tMax Error: 0.14")
 	print(f"\tError Ax: {x_change_p}")
 	print(f"\tError Ay: {y_change_p}")
@@ -148,7 +161,8 @@ def self_test_accel():
 
 	bus.write_byte_data(Device_Address, ACCEL_CONFIG, accel_config_restore)
 
-
+#Wakes and Initializes MPU to a 1khz sample rate (8khz for the gyro) and sets the configuration for accel and gyro range
+#Runs a self test after
 def MPU_Init():
 	#write to sample rate register [1khz]
 	bus.write_byte_data(Device_Address, SMPLRT_DIV, 7)
@@ -172,7 +186,7 @@ def MPU_Init():
 	self_test_accel()
 
 
-
+#Read raw 16 bit value from MPU register
 def read_s16_raw(addr_h, addr_l):
 	high = bus.read_byte_data(Device_Address, addr_h)
 	low = bus.read_byte_data(Device_Address, addr_l)
@@ -183,10 +197,12 @@ def read_s16_raw(addr_h, addr_l):
 	signed_value = ctypes.c_int16(value).value
 	return signed_value
 
+#Read temperature value (in Celsius) from MPU
 def read_temp():
 	value = read_s16_raw(TEMP_OUT_H, TEMP_OUT_L)
 	return value/340 + 36.53
 
+#Read acceleration values (in g) from MPU, returns [3]
 def read_accel():
 	valx = read_s16_raw(ACCEL_XOUT_H, ACCEL_XOUT_L)
 	valy = read_s16_raw(ACCEL_YOUT_H, ACCEL_YOUT_L)
@@ -196,6 +212,7 @@ def read_accel():
 
 	return [valx/divisor, valy/divisor, valz/divisor] #value depends on accel scale, returns in g
 
+#Reads gyroscope rotation values (in deg/s), returns [3]
 def read_gyro():
 	valx = read_s16_raw(GYRO_XOUT_H, GYRO_XOUT_L)
 	valy = read_s16_raw(GYRO_YOUT_H, GYRO_YOUT_L)
@@ -205,13 +222,15 @@ def read_gyro():
 
 	return [valx/divisor, valy/divisor, valz/divisor] #value depends on gyro scale, returns in deg/s
 
+#Samples per analysis block
+SAMPLE_COUNT = 512
 
-SAMPLE_COUNT = 500
-
+#Starts a sampler that reads and creates analysis blocks for processing and sends to analysis process
 def producer(dqueue: Queue, plock):
 	print("Im a producer")
 	MPU_Init()
 
+	temp_count = 0
 	while True:		
 		sample_segment = []
 		for i in range(SAMPLE_COUNT):
@@ -221,23 +240,27 @@ def producer(dqueue: Queue, plock):
 			Ax = accel[0]
 			Ay = accel[1]
 			Az = accel[2]
-			
-			#Read Gyroscope value
-			gyro = read_gyro()
-			Gx = gyro[0]
-			Gy = gyro[1]
-			Gz = gyro[2]
 
 			#Read temp value
 			Temp = read_temp()
-			
-			#print ("Gx=%.6f" %Gx, u'\u00b0'+ "/s", "\tGy=%.6f" %Gy, u'\u00b0'+ "/s", "\tGz=%.6f" %Gz, u'\u00b0'+ "/s", "\tAx=%.6f g" %Ax, "\tAy=%.6f g" %Ay, "\tAz=%.6f g" %Az, "\tTemp=%.2f c" %Temp, end='\x1b[2k\r') 	
+			if Temp > 85:
+				temp_count += 1
+				print("WARNING: MPU TEMPERATURE EXCEEDED OPERATING RANGE")
+			else:
+				temp_count = 0
+			if temp_count >= 100:
+				print("ERROR: MPU TEMPERATURE TOO HIGH, EXTING PROGRAM")
+				exit(1)
+				
 			sample_segment.append(accel)
 
-			#sleep(0.001)
 		dqueue.put(sample_segment)
 
+#number of consecutive "on" tests required to change to "on" state
 DELAY_SAMPLES = 4
+
+#Analysis process, receives sample block and determines if hot water is on or off
+#If a state change occurs, writes to the output csv for use by the prediction system
 def consumer(dqueue, plock):
 	print("Im a consumer")
 
@@ -247,20 +270,13 @@ def consumer(dqueue, plock):
 	while True:
 		s = dqueue.get()
 		
-		# sample = np.ndarray(shape=(SAMPLE_COUNT, 3), buffer=np.array(s), dtype=np.double).transpose() #(3, SAMPLE_COUNT)
-		# sample = np.linalg.norm(sample, axis=0)
-		# with plock:
-		# 	print(np.var(sample))
+		sample = np.ndarray(shape=(SAMPLE_COUNT, 3), buffer=np.array(s), dtype=np.double).transpose() #(3, SAMPLE_COUNT)
 
-		# threshold = np.var(sample) > 1e-3
-
-		sample = pd.DataFrame({'x': [val[0] for val in s], 'y': [val[1] for val in s], 'z': [val[2] for val in s]})
-		ema = sample.T.ewm(alpha=0.8, adjust=True).mean()
 		threshold = False
-		max_x =  ema.loc[['x']].max(axis=1).item()
-		max_y =  ema.loc[['y']].max(axis=1).item()
-		print(f"X: {max_x}\tY: {max_y}")
-		if ((1.034 < max_x and max_x < 1.09) or (1.09 < max_x and max_x < 1.034)):
+		fft = np.fft.fft(sample[0])[SAMPLE_COUNT//2:]
+		fft_norm = np.abs(fft)
+		fft_mb = np.argmax(fft_norm)
+		if (fft_mb == 238 or fft_mb == 224 or 110 <= fft_mb <= 114) and fft_norm[fft_mb] > 2:
 			threshold = True
 
 		if threshold:
@@ -287,23 +303,19 @@ def consumer(dqueue, plock):
 					print("Hot water ON")
 				with open('running-data.csv', 'a') as f:
 					writer = csv.writer(f, delimiter=',')
-					writer.writerow([1, {datetime.now()}])
-				sample.to_csv(f"samples/sample-{tsample_count}.csv", index=False)				
+					writer.writerow([1, {datetime.now()}])			
 			else:
 				with plock:
 					print("Hot water OFF")
 				with open('running-data.csv', 'a') as f:
 					writer = csv.writer(f, delimiter=',')
 					writer.writerow([0, {datetime.now()}])
-				sample.to_csv(f"samples/sample-{tsample_count}.csv", index=False)
 
 			tsample_count += 1
 		
-
-
-
-
-
+#Start producer and consumer processes with an IPC queue
+#While threads would be preferable, python cannot do true thread parallelism in many cases except I/O due to GIL
+#This could bottleneck the program and limit the sampling speed, so processes are used instead
 if __name__ == "__main__":
 	data_queue = Queue()
 	print_lock = Lock()
