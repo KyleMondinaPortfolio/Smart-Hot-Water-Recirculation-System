@@ -2,6 +2,20 @@
 
 Make sure nodejs is already installed in your pi
 
+## Set up neccessary config variable
+
+In config.json set the appropriate config variables
+
+```json
+	"HW_LED_PIN": "The LED pin number you are connecting to indicate pump status"
+	"PUMP_SWITCH_INTV": "Interval in minutes of how often you want the pi to check if hot water is needed"
+	"PREDICTION_SCHEDULE": "Time of day you want the prediction algorithm to run"
+	"SERVER_IP": "IP of the gateway that you set to connect to the UI frontend, default should be 192.168.4.1"
+	"WEB_SOCKET_PORT": "Port of server you will be hosting the UI, default is 3000"
+	"HOT_WATER_HISTORY_FILE": "CSV file where you store hot water demand history",
+	"HOT_WATER_FORECAST_FILE": "CSV file where you store hot water demand forecast"
+```
+
 ## Build React Client and Nodejs Server
 
 1. Download necessary nodejs modules for server.js
@@ -92,7 +106,7 @@ wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 ```
-YOu will need to play around with the value of channel
+You will need to play around with the value of channel
 
 8. Tell hostapd where to find the configuration:
 ```bash

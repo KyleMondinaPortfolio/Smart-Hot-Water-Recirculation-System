@@ -2,6 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const socketIO = require('socket.io'); 
+const config = path.join(__dirname, "config.json");
+const httpPort = require(config).WEB_SOCKET_PORT;
 
 // State variables
 let predictionStatus = 'off';
@@ -61,17 +63,17 @@ const serveStaticFile = (filePath, res) => {
   });
 };
 
+
+httpServer.listen(httpPort, () => {
+  console.log(`HTTP server is listening on port ${httpPort}`);
+});
+
 const updateState = (newState) => {
   console.log(`newState: ${newState}`);
   predictionStatus = newState.predictionStatus;
   pumpSwitchStatus = newState.pumpSwitchStatus;
   console.log('Updated state:', { predictionStatus, pumpSwitchStatus });
 };
-
-const httpPort = 3000; // You can change this port
-httpServer.listen(httpPort, () => {
-  console.log(`HTTP server is listening on port ${httpPort}`);
-});
 
 const io = socketIO(httpServer);
 

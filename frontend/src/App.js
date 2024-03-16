@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios'; // Make sure to install axios using: npm install axios
 
-const serverIp = '192.168.50.100'
+const config = path.join(__dirname, "..", "..", "config.json");
+const serverIp = require(config).SERVER_IP;
+
 const socket = io(`http://${serverIp}:3000`); // Connect to the server's socket
 
 
