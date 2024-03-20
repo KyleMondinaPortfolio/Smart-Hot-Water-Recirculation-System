@@ -1,4 +1,5 @@
 # Implementation Overview
+![SoftwareArchitectureOverview](/SoftwareArchitectureOverview.PNG)
 
 ## Controller
 The controller component of our IoT system is comprised of `main.py`, which operates with two concurrent running thread functions. The prediction thread executes once daily as specified in `config.json`. It utilizes the prediction algorithm, which reads data from the hot water history CSV file and generates a forecast CSV file for the current day's predicted hot water usage. The pump switch thread then interprets this data and adjusts the pump's status accordingly. Additionally, main.py shares state information with server.js.
