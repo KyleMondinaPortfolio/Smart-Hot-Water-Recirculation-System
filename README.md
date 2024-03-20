@@ -1,8 +1,8 @@
 # Implementation Overview
-![SoftwareArchitectureOverview](/SoftwareArchitectureOverview.PNG)
+   ![SoftwareArchitectureOverview](/SoftwareArchitectureOverview.PNG)
 
 ## Controller
-The controller component of our IoT system is comprised of `main.py`, which operates with two concurrent running thread functions. The prediction thread executes once daily as specified in `config.json`. It utilizes the prediction algorithm, which reads data from the hot water history CSV file and generates a forecast CSV file for the current day's predicted hot water usage. The pump switch thread then interprets this data and adjusts the pump's status accordingly. Additionally, main.py shares state information with server.js. The prediction thread's target function is set to the arima function defined in main.py in this current configuration. 
+The controller component of our IoT system is comprised of `main.py`, which operates with two concurrent running thread functions. The prediction thread executes once daily as specified in `config.json`. It utilizes the prediction algorithm, which reads data from the running_data.csv file and generates hw_forecast.csv for the current day's predicted hot water usage. The pump switch thread then interprets this data and adjusts the pump's status accordingly. Additionally, main.py shares state information with server.js. The prediction thread's target function is set to the arima function defined in main.py in this current configuration. 
 
 `Server.js` operates as a concurrent process, hosting the UI webpages and providing real-time updates on the prediction services and pump status for user monitoring and control. Any alterations to these state variables are communicated to pump.py via Socket.IO, where main.py establishes a connection with `server.js`.
 
