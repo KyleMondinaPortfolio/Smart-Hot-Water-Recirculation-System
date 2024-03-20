@@ -1,9 +1,12 @@
 # Implementation Overview
 
-The controller component of our IoT system is comprised of main.py, which operates with two concurrent running thread functions. The prediction thread executes once daily as specified in config.json. It utilizes the prediction algorithm, which reads data from the hot water history CSV file and generates a forecast CSV file for the current day's predicted hot water usage. The pump switch thread then interprets this data and adjusts the pump's status accordingly. Additionally, main.py shares state information with server.js.
+## Controller
+The controller component of our IoT system is comprised of `main.py`, which operates with two concurrent running thread functions. The prediction thread executes once daily as specified in `config.json`. It utilizes the prediction algorithm, which reads data from the hot water history CSV file and generates a forecast CSV file for the current day's predicted hot water usage. The pump switch thread then interprets this data and adjusts the pump's status accordingly. Additionally, main.py shares state information with server.js.
 
-Server.js operates as a concurrent process, hosting the UI webpages and providing real-time updates on the prediction services and pump status for user monitoring and control. Any alterations to these state variables are communicated to pump.py via Socket.IO, where main.py establishes a connection with server.js.
+`Server.js` operates as a concurrent process, hosting the UI webpages and providing real-time updates on the prediction services and pump status for user monitoring and control. Any alterations to these state variables are communicated to pump.py via Socket.IO, where main.py establishes a connection with `server.js`.
 
+## Sensing
+`accel_processor.py` handles the interface and processing of the accelerometer for sensing water flow. It contains functions for interfacing with the sensor over I2C, a producer process, and a consumer process. The producer process opens a connection to the sensor and collects samples at 1kHz into an array and sends them to the consumer using a cross-process queue. it also runs a self test of the sensors and monitors the temperature of the sensor to shut it down if it exceeds the operating threshold of the sensor. The consumer listens for new pushes to that queue, pops the sample segments, then executes a fast fourier transform to shift the signal into the frequency domain for analysis as described in the report document. State changes are recorded into the `running-data.csv` file where they can be read by the prediction system. Details about the individual sensor interface functions are mentioned in the file's comments.
 
 # Set up
 
