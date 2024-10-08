@@ -1,22 +1,22 @@
-# Implementation Overview
+## Implementation Overview
    ![SoftwareArchitectureOverview](/SoftwareArchitectureOverview.PNG)
 
-## Controller
+### Controller
 The controller component of our IoT system is comprised of `main.py`, which operates with two concurrent running thread functions. The prediction thread executes once daily as specified in `config.json`. It utilizes the prediction algorithm, which reads data from the `running_data.csv` file and generates `hw_forecast.csv` for the current day's predicted hot water usage. The pump switch thread then interprets this data and adjusts the pump's status accordingly. Additionally, `main.py` shares state information with `server.js`. The prediction thread's target function is set to the arima function defined in main.py in this current configuration. 
 
 `Server.js` operates as a concurrent process, hosting the UI webpages and providing real-time updates on the prediction services and pump status for user monitoring and control. Any alterations to these state variables are communicated to pump.py via Socket.IO, where main.py establishes a connection with `server.js`.
 
-## Sensing
+### Sensing
 `accel_processor.py` handles the interface and processing of the accelerometer for sensing water flow. It contains functions for interfacing with the sensor over I2C, a producer process, and a consumer process. The producer process opens a connection to the sensor and collects samples at 1kHz into an array and sends them to the consumer using a cross-process queue. it also runs a self test of the sensors and monitors the temperature of the sensor to shut it down if it exceeds the operating threshold of the sensor. The consumer listens for new pushes to that queue, pops the sample segments, then executes a fast fourier transform to shift the signal into the frequency domain for analysis as described in the report document. State changes are recorded into the `running-data.csv` file where they can be read by the prediction system. Details about the individual sensor interface functions are mentioned in the file's comments.
 
-## Deep Learning
+### Deep Learning
 The files pertaining to the deep learning approach are called `seq_forecast.py` and `seq-data.csv`. The former contains class definintions for the model, helper functions and the main `run` function. This is the function that is called by the controller in place of `predict_by_arima`. The `run` function has three modes: training, evalutation, and forecasting. In the case that the deep learning is rolled out only once enough data is collected by the system, the controller would first train the model (via `run(mode='train')`), evaluate it (via `run(mode='eval')`), and finally forecast (via `run(historical_data, mode='forecast')`) where the historical data is simply historical hot water usage data stored by the system. When `run` is called in forecast mode, it returns a list of 96 values (0 or 1) corresponding to whether hot water will be needed at each timestep for the following day. This list will be added to `hw_forecast.csv`. `seq-data.csv` is the augmented data used to train the model and should be refined for production use cases.
 
-# Set up
+## Set up
 
 Make sure nodejs is already installed in your pi
 
-## Set up neccessary config variable
+### Set up neccessary config variable
 
 In config.json set the appropriate config variables
 
@@ -30,7 +30,7 @@ In config.json set the appropriate config variables
 	"HOT_WATER_FORECAST_FILE": "CSV file where you store hot water demand forecast"
 ```
 
-## Build React Client and Nodejs Server
+### Build React Client and Nodejs Server
 
 1. Download necessary nodejs modules for server.js
 
@@ -48,7 +48,7 @@ npm install
 npm run build
 ```
 
-## Install ncessary python modules for main.py
+### Install ncessary python modules for main.py
 
 ```bash
 
@@ -56,7 +56,7 @@ pip install python-socketio
 pip install gpiozero
 ```
 
-## Set up Rasbery Pi as a wifi access point
+### Set up Rasbery Pi as a wifi access point
 
 1. Install the necessary packages for setting up the access point:
 
@@ -140,14 +140,14 @@ sudo systemctl enable hostapd
 sudo systemctl enable dnsmasq
 ```
 
-## Start the server.js and main.py
+### Start the server.js and main.py
 ```bash
 node server.js
 python main.py
 ```
 
 
-## Connect to pi
+### Connect to pi
 1. Connect to wifi IOTWinter24, password same as name
 
 2. To access UI, go to:
@@ -155,5 +155,5 @@ python main.py
 http://192.168.4.1:3000
 ```
 
-# Running
+## Running
 To run, cd to the main folder of the repository and run `./run.sh`. Check the outputs folder for stdout dumps of each process. To stop running, kill the 3 PIDs in the run.pid file.
