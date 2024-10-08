@@ -2,6 +2,13 @@
 
 The Smart Hot Water Recirculation System is an IoT-based solution designed to address the inconvenience and energy inefficiencies of conventional hot water recirculation systems. It leverages predictive algorithms to provide instant hot water while minimizing energy costs by reducing unnecessary pump usage.
 
+## Authors
+- Roshan Sevalia
+- Kyle Mondina
+- Lakshmi Priya
+- Xavier Kuehn
+
+This project was completed as part of COEN 243 - Internet of Things at Santa Clara University under the guidance of Professor Yen-Kuang Chen
 ## Implementation Overview
    ![SoftwareArchitectureOverview](/SoftwareArchitectureOverview.PNG)
 
